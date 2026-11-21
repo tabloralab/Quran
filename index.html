@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b5d3b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Quran Reader</title>
+<style>
+@font-face{font-family:"QFont";src:url("KFGQPCNastaleeq-Regular.woff2") format("woff2");font-display:block}
+:root{--bg:#ffffff;--fg:#000000;--line:#000000;--bar:#0b5d3b;--barfg:#ffffff;--panel:#ffffff;--soft:#eef3ef;--bold:0.35px;--rule:1px}
+body.night{--bg:#0d0f0e;--fg:#e8e4d8;--line:#8a8a80;--bar:#1b1f1d;--barfg:#e8e4d8;--panel:#1a1d1c;--soft:#252927}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+#top{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 12px;background:var(--bar);color:var(--barfg);flex:none}
+#top .t{font-family:QFont,serif;font-size:22px;line-height:1}
+#top button{background:none;border:0;color:var(--barfg);font-size:22px;padding:6px 8px}
+#stage{flex:1;min-height:0;padding:6px;position:relative}
+#page{height:100%;width:100%;max-width:640px;margin:0 auto;border:3px solid var(--line);outline:1px solid var(--line);outline-offset:2px;display:flex;flex-direction:column;justify-content:center;background:var(--bg);touch-action:pan-y}
+.ln{height:calc(100% / 13);flex:none;display:flex;align-items:center;justify-content:center;border-bottom:var(--rule) solid var(--line);overflow:hidden;padding:0 6px}
+.ln:last-child{border-bottom:0}
+.ln .t{display:inline-block;white-space:nowrap;direction:rtl;font-family:QFont,serif;-webkit-text-stroke:var(--bold) currentColor;line-height:1.6}
+.ln.s{padding:2px 4px}
+.sbox{width:100%;height:92%;border:2px double var(--line);border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:var(--soft);font-family:QFont,serif}
+.sbox .n{font-family:system-ui,'Noto Naskh Arabic',Arial,sans-serif;font-size:14px;min-width:70px}.sbox .n:last-child{text-align:right}
+.sbox .nm{font-size:22px;white-space:nowrap}
+#bar{display:flex;justify-content:space-around;background:var(--bar);flex:none;padding:4px 0 calc(4px + env(safe-area-inset-bottom))}
+#bar button{background:none;border:0;color:var(--barfg);font-size:24px;padding:6px 14px;line-height:1}
+#bar small{display:block;font-size:10px;margin-top:2px;opacity:.85}
+.hide #top,.hide #bar{display:none}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
+#modal.on{display:flex}
+#sheet{background:var(--panel);color:var(--fg);width:100%;max-width:640px;max-height:88%;border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+#sheet h2{margin:0;padding:14px 16px;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+#sheet h2 button{background:none;border:0;font-size:22px;color:var(--fg)}
+#body{overflow:auto;padding:0 16px 20px}
+input[type=text],input[type=number]{width:100%;padding:11px;font-size:16px;border:1px solid #888;border-radius:8px;background:var(--bg);color:var(--fg)}
+.row{display:flex;gap:8px;margin:8px 0}
+.btn{padding:10px 14px;border:0;border-radius:8px;background:var(--bar);color:var(--barfg);font-size:15px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #8884}
+.item .a{font-family:QFont,serif;font-size:20px}
+.item .m{font-size:13px;opacity:.8}
+.snip{font-family:QFont,serif;font-size:18px;direction:rtl;text-align:right;padding:8px 4px;border-bottom:1px solid #8884}
+label{display:block;margin:14px 0 4px;font-weight:600}
+.note{font-size:13px;opacity:.75;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top"><button id="bmBtn" title="Bookmark this page">☆</button><span class="t" id="hSurah"></span><span id="hPage" style="font-size:16px"></span></div>
+  <div id="stage"><div id="page"></div></div>
+  <div id="bar">
+    <button id="bSet">⚙<small>Settings</small></button>
+    <button id="bIdx">☰<small>Index</small></button>
+    <button id="bNight">🌙<small>Night</small></button>
+    <button id="bBm">🔖<small>Bookmarks</small></button>
+  </div>
+</div>
+<div id="modal"><div id="sheet"><h2><span id="mTitle"></span><button id="mClose">✕</button></h2><div id="body"></div></div></div>
+<script src="quran-data.js"></script>
+<script>
+(function(){
+var TOTAL=847, P=Q.pages, cur=1, bms=[], $=function(i){return document.getElementById(i)};
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function ar(n){return String(n).replace(/\d/g,function(d){return '٠١٢٣٤٥٦٧٨٩'[d]})}
+try{bms=JSON.parse(ls('q_bm')||'[]')}catch(e){bms=[]}
+var bold=parseFloat(ls('q_bold')); if(isNaN(bold))bold=0.35;
+var rule=ls('q_rule')!=='0';
+function applyTheme(){document.body.classList.toggle('night',ls('q_night')==='1');
+  document.documentElement.style.setProperty('--bold',bold+'px');
+  document.documentElement.style.setProperty('--rule',rule?'1px':'0px');
+  document.querySelector('meta[name=theme-color]').content=ls('q_night')==='1'?'#1b1f1d':'#0b5d3b'}
+function render(){
+  var pg=P[cur-1], h='';
+  for(var i=0;i<pg.length;i++){var l=pg[i];
+    if(l[0]==='s'){var s=l[2];
+      h+='<div class="ln s" data-k="s"><div class="sbox"><span class="n">آيات '+Q.cnt[s-1]+'</span><span class="nm">سُورَةُ '+Q.ar[s-1]+'</span><span class="n">'+s+'</span></div></div>'}
+    else h+='<div class="ln" data-k="'+l[0]+'" data-c="'+l[1]+'"><span class="t">'+l[2]+'</span></div>'}
+  $('page').innerHTML=h;
+  $('hSurah').textContent='سورة '+Q.ar[Q.ps[cur-1]-1];
+  $('hPage').textContent=ar(cur);
+  $('bmBtn').textContent=bms.indexOf(cur)>-1?'★':'☆';
+  ls('q_page',cur);
+  fit();
+}
+function fit(){
+  var pgEl=$('page'); if(!pgEl.firstChild)return;
+  var rowH=pgEl.clientHeight/13, avail=pgEl.clientWidth-6*2-22, cap=rowH*0.62, base=40;
+  var ts=pgEl.querySelectorAll('.ln:not(.s) .t');
+  for(var i=0;i<ts.length;i++){var t=ts[i], ln=t.parentNode;
+    t.style.fontSize=base+'px'; t.style.wordSpacing='0px';
+    var w=t.offsetWidth; if(!w)continue;
+    var fs=Math.min(cap, base*avail/w);
+    if(ln.dataset.c==='1')fs=Math.min(fs,cap*0.92);
+    t.style.fontSize=fs+'px';
+    if(ln.dataset.c!=='1'){var w2=w*fs/base, sp=(t.textContent.match(/ /g)||[]).length;
+      if(sp>0&&avail>w2){t.style.wordSpacing=Math.min((avail-w2)/sp, fs*1.5)+'px'}}
+  }
+  var nm=pgEl.querySelectorAll('.nm'); for(i=0;i<nm.length;i++)nm[i].style.fontSize=Math.min(26,rowH*0.5)+'px';
+}
+function go(p){p=Math.max(1,Math.min(TOTAL,parseInt(p)||1));cur=p;render()}
+// swipe + tap + keys
+var sx=0,sy=0,moved=false;
+var pe=$('page');
+pe.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+pe.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){go(dx>0?cur+1:cur-1)}
+  else if(Math.abs(dx)<10&&Math.abs(dy)<10){document.body.classList.toggle('hide');setTimeout(fit,50)}});
+pe.addEventListener('click',function(e){if(e.pointerType==='mouse'){document.body.classList.toggle('hide');setTimeout(fit,50)}});
+document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')go(cur+1);if(e.key==='ArrowRight')go(cur-1)});
+window.addEventListener('resize',function(){setTimeout(fit,60)});
+// modal
+function open(title,html){$('mTitle').textContent=title;$('body').innerHTML=html;$('modal').classList.add('on')}
+function close(){$('modal').classList.remove('on')}
+$('mClose').onclick=close; $('modal').addEventListener('click',function(e){if(e.target.id==='modal')close()});
+function surahList(f){var h='';f=(f||'').toLowerCase().trim();
+  for(var i=0;i<114;i++){var t=(Q.en[i]+' '+Q.ar[i]+' '+(i+1)).toLowerCase();
+    if(f&&t.indexOf(f)<0)continue;
+    h+='<div class="item" data-p="'+Q.st[i]+'"><span><b>'+(i+1)+'.</b> '+Q.en[i]+'<div class="m">Page '+Q.st[i]+' · '+Q.cnt[i]+' ayahs</div></span><span class="a">'+Q.ar[i]+'</span></div>'}
+  return h||'<p>No surah found.</p>'}
+function bindItems(){var it=document.querySelectorAll('#body [data-p]');for(var i=0;i<it.length;i++)it[i].onclick=function(){go(this.getAttribute('data-p'));close()}}
+function norm(s){return s.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640\uFB50-\uFDFF\uFE70-\uFEFF\u08D3-\u08FF]/g,'')
+  .replace(/[ٱأإآ]/g,'ا').replace(/[یىي]/g,'ي').replace(/[کك]/g,'ك').replace(/[ہھۃة]/g,'ه').replace(/[ؤ]/g,'و').replace(/\s+/g,' ').trim()}
+var idx=null;
+function buildIdx(){idx=[];for(var p=0;p<P.length;p++)for(var i=0;i<P[p].length;i++){var l=P[p][i];if(l[0]==='a')idx.push([p+1,norm(l[2]),l[2]])}}
+function doSearch(q){q=norm(q);if(q.length<2)return '<p>Type at least 2 letters (Arabic).</p>';
+  if(!idx)buildIdx();var out='',n=0;
+  for(var i=0;i<idx.length&&n<60;i++){if(idx[i][1].indexOf(q)>-1){n++;out+='<div class="snip" data-p="'+idx[i][0]+'">'+idx[i][2]+'<div class="m" style="direction:ltr;text-align:left;font-family:system-ui;font-size:12px">Page '+idx[i][0]+'</div></div>'}}
+  return out||'<p>Nothing found. Search can miss words that are split across two lines.</p>'}
+$('bIdx').onclick=function(){
+  open('Index / Go to page','<div class="row"><input type="number" id="gp" placeholder="Page 1 - '+TOTAL+'" min="1" max="'+TOTAL+'"><button class="btn" id="gb">Go</button></div>'+
+   '<input type="text" id="gs" placeholder="Search surah name (English or Arabic)"><div class="row"><input type="text" id="gq" dir="rtl" placeholder="بحث في القرآن (Arabic text search)"><button class="btn" id="gqb">Find</button></div><div id="gl">'+surahList('')+'</div>');
+  bindItems();
+  $('gb').onclick=function(){var v=parseInt($('gp').value);if(v>=1&&v<=TOTAL){go(v);close()}};
+  $('gs').oninput=function(){$('gl').innerHTML=surahList(this.value);bindItems()};
+  $('gqb').onclick=function(){$('gl').innerHTML=doSearch($('gq').value);bindItems()};
+};
+$('bSet').onclick=function(){
+  open('Settings','<label>Text boldness</label><input type="range" id="sb" min="0" max="1" step="0.05" value="'+bold+'" style="width:100%">'+
+   '<label>Ruled lines</label><div class="row"><button class="btn" id="sr">'+(rule?'Turn off':'Turn on')+'</button></div>'+
+   '<p class="note">Swipe right = next page. Swipe left = previous page. Tap the page to hide or show the bars. Last page read is saved automatically.</p>'+
+   '<p class="note">Quran text and layout: Quranic Universal Library (QUL), Taj Company 13-line Indo-Pak. Font: KFGQPC Nastaleeq (King Fahd Complex). The Quran text is shown exactly as supplied and is not edited.</p>');
+  $('sb').oninput=function(){bold=parseFloat(this.value);ls('q_bold',bold);applyTheme();fit()};
+  $('sr').onclick=function(){rule=!rule;ls('q_rule',rule?'1':'0');applyTheme();this.textContent=rule?'Turn off':'Turn on'};
+};
+$('bNight').onclick=function(){ls('q_night',ls('q_night')==='1'?'0':'1');applyTheme()};
+function bmList(){if(!bms.length)return '<p>No bookmarks yet. Tap ☆ at the top left to bookmark a page.</p>';
+  var h='';bms.slice().sort(function(a,b){return a-b}).forEach(function(p){var s=Q.ps[p-1]-1;
+   h+='<div class="item"><span data-p="'+p+'" style="flex:1"><b>Page '+p+'</b><div class="m">'+Q.en[s]+'</div></span><button class="btn" data-del="'+p+'">Delete</button></div>'});return h}
+function bindBm(){bindItems();var d=document.querySelectorAll('[data-del]');for(var i=0;i<d.length;i++)d[i].onclick=function(){var p=parseInt(this.getAttribute('data-del'));
+  bms=bms.filter(function(x){return x!==p});ls('q_bm',JSON.stringify(bms));$('body').innerHTML=bmList();bindBm();$('bmBtn').textContent=bms.indexOf(cur)>-1?'★':'☆'}}
+$('bBm').onclick=function(){open('Bookmarks',bmList());bindBm()};
+$('bmBtn').onclick=function(){var i=bms.indexOf(cur);if(i>-1)bms.splice(i,1);else bms.push(cur);ls('q_bm',JSON.stringify(bms));$('bmBtn').textContent=bms.indexOf(cur)>-1?'★':'☆'};
+applyTheme();
+var sp=parseInt(ls('q_page'));if(sp>=1&&sp<=TOTAL)cur=sp;
+var q=location.hash.match(/p=(\d+)/);if(q)cur=Math.max(1,Math.min(TOTAL,parseInt(q[1])));
+var start=function(){render()};
+if(document.fonts&&document.fonts.load){document.fonts.load('40px QFont','بسم').then(start,start)}else start();
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js');
+})();
+</script>
+</body>
+</html>
