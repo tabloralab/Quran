@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b5d3b">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Quran Reader</title>
 <style>
 @font-face{font-family:"QFont";src:url("KFGQPCNastaleeq-Regular.woff2") format("woff2");font-display:block}
@@ -103,16 +104,19 @@ function fit(){
   document.documentElement.style.setProperty('--rh',rowH+'px');
   document.documentElement.style.setProperty('--pw',W+'px');
   var avail=W-6-12-20, cap=rowH*0.56, base=40;
-  var ts=pgEl.querySelectorAll('.ln:not(.s) .t');
-  for(var i=0;i<ts.length;i++){var t=ts[i], ln=t.parentNode;
-    t.style.fontSize=base+'px'; t.style.wordSpacing='0px';
-    var w=t.offsetWidth; if(!w)continue;
-    var fs=Math.min(cap, base*avail/w);
-    if(ln.dataset.c==='1')fs=Math.min(fs,cap*0.92);
+  var ts=pgEl.querySelectorAll('.ln:not(.s) .t'), info=[], fits=[];
+  for(var i=0;i<ts.length;i++){var t=ts[i];
+    t.style.fontSize=base+'px'; t.style.wordSpacing='0px'; t.style.transform='none';
+    var w=t.offsetWidth; var fit=w?base*avail/w:cap; info.push([t,w,fit]);
+    if(t.parentNode.dataset.c!=='1')fits.push(fit)}
+  fits.sort(function(a,b){return a-b});
+  var F=Math.min(cap, fits.length?fits[Math.floor(fits.length*0.2)]:cap);
+  for(i=0;i<info.length;i++){var t=info[i][0], w=info[i][1], fit=info[i][2], ln=t.parentNode, c=ln.dataset.c==='1', fs=F, sx=1;
+    if(fit<F){var r=fit/F; if(r>=0.86){sx=r}else{fs=fit}}
     t.style.fontSize=fs+'px';
-    if(ln.dataset.c!=='1'){var w2=w*fs/base, sp=(t.textContent.match(/ /g)||[]).length;
-      if(sp>0&&avail>w2){t.style.wordSpacing=Math.min((avail-w2)/sp, fs*1.5)+'px'}}
-  }
+    if(sx<1)t.style.transform='scaleX('+sx+')';
+    if(!c){var w2=w*fs/base*sx, sp=(t.textContent.match(/ /g)||[]).length;
+      if(sp>0&&avail>w2){t.style.wordSpacing=Math.min((avail-w2)/sp/sx, fs*1.5)+'px'}}}
   var nm=pgEl.querySelectorAll('.nm'); for(i=0;i<nm.length;i++)nm[i].style.fontSize=Math.min(26,rowH*0.48)+'px';
 }
 function go(p){p=Math.max(1,Math.min(TOTAL,parseInt(p)||1));cur=p;render()}
