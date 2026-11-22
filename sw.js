@@ -1,4 +1,4 @@
-var C='quran-v3',F=['./','index.html','quran-data.js','KFGQPCNastaleeq-Regular.woff2','manifest.json','icon-192.png','icon-512.png','icon-maskable-512.png'];
+var C='quran-v5',F=['./','index.html','quran-data.js','KFGQPCNastaleeq-Regular.woff2','manifest.json','icon-192.png','icon-512.png','icon-maskable-512.png'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(C).then(function(c){return c.addAll(F)}));self.skipWaiting()});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(x){return x!==C}).map(function(x){return caches.delete(x)}))}))});
-self.addEventListener('fetch',function(e){e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request)}))});
+self.addEventListener('fetch',function(e){if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request).then(function(n){if(n&&n.ok&&new URL(e.request.url).origin===location.origin){var cp=n.clone();caches.open(C).then(function(c){c.put(e.request,cp)})}return n})}))});

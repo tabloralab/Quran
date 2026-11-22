@@ -15,8 +15,12 @@ body.night{--bg:#0d0f0e;--fg:#e8e4d8;--line:#8a8a80;--bar:#1b1f1d;--barfg:#e8e4d
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
-#top{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 12px;background:var(--bar);color:var(--barfg);flex:none}
-#top .t{font-family:QFont,serif;font-size:22px;line-height:1}
+#top{display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 12px;background:var(--bar);color:var(--barfg);flex:none}
+#top .c{text-align:center;line-height:1.15;flex:1}
+#top .t{font-family:QFont,serif;font-size:21px}
+#top .no{font-family:system-ui,Arial,sans-serif;font-size:15px;font-weight:700;margin:0 4px;background:rgba(255,255,255,.18);border-radius:10px;padding:1px 7px}
+#top .pr{font-size:13px;opacity:.95;margin-top:2px}
+#top .pr b{font-family:QFont,serif;font-weight:400;font-size:15px}
 #top button{background:none;border:0;color:var(--barfg);font-size:22px;padding:6px 8px}
 #stage{flex:1;min-height:0;padding:6px;position:relative;display:flex;align-items:center;justify-content:center}
 #page{height:100%;width:100%;flex:none;border:3px solid var(--line);outline:1px solid var(--line);outline-offset:2px;display:flex;flex-direction:column;justify-content:center;background:var(--bg);touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -52,11 +56,21 @@ input[type=text],input[type=number]{width:100%;padding:11px;font-size:16px;borde
 .snip{font-family:QFont,serif;font-size:18px;direction:rtl;text-align:right;padding:8px 4px;border-bottom:1px solid #8884}
 label{display:block;margin:14px 0 4px;font-weight:600}
 .note{font-size:13px;opacity:.75;margin-top:14px}
+.w.sel{background:rgba(212,160,23,.40);border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#modal.ay{background:transparent;pointer-events:none}
+#modal.ay #sheet{pointer-events:auto;max-height:48%;box-shadow:0 -4px 18px rgba(0,0,0,.35)}
+#showBars{display:none;position:fixed;top:calc(8px + env(safe-area-inset-top));right:8px;z-index:6;width:40px;height:40px;border:0;border-radius:20px;background:rgba(11,93,59,.85);color:#fff;font-size:20px}
+body.hide #showBars{display:block}
+select{width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid #888;background:var(--bg);color:var(--fg)}
+.trt{font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Noto Naskh Arabic','Droid Naskh',system-ui,Arial,sans-serif;font-size:21px;line-height:2.1;direction:rtl;text-align:right;margin:12px 0}
+.fn{font-family:system-ui,'Noto Naskh Arabic',Arial,sans-serif;font-size:15px;line-height:1.8;direction:rtl;text-align:right;background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
+.cr{font-size:12px;opacity:.75;margin-top:10px;line-height:1.5}
+.navrow{display:flex;gap:8px;margin:2px 0 10px}.navrow .btn{flex:1}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="top"><button id="bmBtn" title="Bookmark this page">☆</button><span class="t" id="hSurah"></span><span id="hPage" style="font-size:16px"></span></div>
+  <div id="top"><button id="bmBtn" title="Bookmark this page">☆</button><div class="c"><div class="t" id="hSurah"></div><div class="pr" id="hPara"></div></div><span id="hPage" style="font-size:16px;min-width:40px;text-align:right"></span></div>
   <div id="stage"><div id="page"></div></div>
   <div id="bar">
     <button id="bNext">◀<small>Next</small></button>
@@ -67,7 +81,7 @@ label{display:block;margin:14px 0 4px;font-weight:600}
     <button id="bPrev">▶<small>Previous</small></button>
   </div>
 </div>
-<button class="navb" id="nN" title="Next page (Left arrow)">◀</button><button class="navb" id="nP" title="Previous page (Right arrow)">▶</button>
+<button id="showBars" title="Show bars">☰</button><button class="navb" id="nN" title="Next page (Left arrow)">◀</button><button class="navb" id="nP" title="Previous page (Right arrow)">▶</button>
 <div id="modal"><div id="sheet"><h2><span id="mTitle"></span><button id="mClose">✕</button></h2><div id="body"></div></div></div>
 <script src="quran-data.js"></script>
 <script>
@@ -87,13 +101,17 @@ function render(){
   for(var i=0;i<pg.length;i++){var l=pg[i];
     if(l[0]==='s'){var s=l[2];
       h+='<div class="ln s" data-k="s"><div class="sbox"><span class="n">آيات '+Q.cnt[s-1]+'</span><span class="nm">سُورَةُ '+Q.ar[s-1]+'</span><span class="n">'+s+'</span></div></div>'}
-    else h+='<div class="ln" data-k="'+l[0]+'" data-c="'+l[1]+'"><span class="t">'+l[2]+'</span></div>'}
+    else if(l[0]==='b')h+='<div class="ln" data-k="b" data-c="1"><span class="t">'+l[2]+'</span></div>';
+    else h+='<div class="ln" data-k="a" data-c="'+l[1]+'"><span class="t">'+l[2].map(function(x){return '<span class="w" data-s="'+x[0]+'" data-a="'+x[1]+'">'+x[2]+'</span>'}).join(' ')+'</span></div>'}
   $('page').innerHTML=h;
-  $('hSurah').textContent='سورة '+Q.ar[Q.ps[cur-1]-1];
-  $('hPage').textContent=ar(cur);
+  var sn=Q.ps[cur-1], jn=Q.pj[cur-1];
+  $('hSurah').innerHTML='سورة '+Q.ar[sn-1]+'<span class="no">'+sn+'</span>';
+  $('hPara').innerHTML='<span dir="rtl">پارہ '+jn+' · <b>'+Q.jn[jn-1]+'</b></span>';
+  $('hPage').textContent=cur;
   $('bmBtn').textContent=bms.indexOf(cur)>-1?'★':'☆';
   ls('q_page',cur);
   fit();
+  if(sel)mark();
 }
 function fit(){
   var pgEl=$('page'), st=$('stage'); if(!pgEl.firstChild)return;
@@ -126,8 +144,13 @@ var pe=$('page');
 pe.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
 pe.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){go(dx>0?cur+1:cur-1)}
-  else if(Math.abs(dx)<10&&Math.abs(dy)<10){document.body.classList.toggle('hide');setTimeout(fit,50)}});
-function modalOpen(){return $('modal').classList.contains('on')}
+});
+pe.addEventListener('click',function(e){var w=e.target.closest&&e.target.closest('.w');
+  if(w){pick(parseInt(w.getAttribute('data-s')),parseInt(w.getAttribute('data-a')))}
+  else{toggleBars()}});
+$('showBars').onclick=function(){toggleBars()};
+function toggleBars(){document.body.classList.toggle('hide');setTimeout(fit,60)}
+function modalOpen(){var m=$('modal');return m.classList.contains('on')&&!m.classList.contains('ay')}
 document.addEventListener('keydown',function(e){
   if(/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))return;
   var k=e.key;
@@ -143,40 +166,78 @@ $('bNext').onclick=$('nN').onclick=function(){go(cur+1)};
 $('bPrev').onclick=$('nP').onclick=function(){go(cur-1)};
 window.addEventListener('resize',function(){setTimeout(fit,60)});
 // modal
-function open(title,html){$('mTitle').textContent=title;$('body').innerHTML=html;$('modal').classList.add('on')}
-function close(){$('modal').classList.remove('on')}
+function open(title,html){$('modal').classList.remove('ay');$('mTitle').textContent=title;$('body').innerHTML=html;$('modal').classList.add('on')}
+function close(){$('modal').classList.remove('on');$('modal').classList.remove('ay');sel=null;mark()}
 $('mClose').onclick=close; $('modal').addEventListener('click',function(e){if(e.target.id==='modal')close()});
 function surahList(f){var h='';f=(f||'').toLowerCase().trim();
   for(var i=0;i<114;i++){var t=(Q.en[i]+' '+Q.ar[i]+' '+(i+1)).toLowerCase();
     if(f&&t.indexOf(f)<0)continue;
     h+='<div class="item" data-p="'+Q.st[i]+'"><span><b>'+(i+1)+'.</b> '+Q.en[i]+'<div class="m">Page '+Q.st[i]+' · '+Q.cnt[i]+' ayahs</div></span><span class="a">'+Q.ar[i]+'</span></div>'}
   return h||'<p>No surah found.</p>'}
+function paraList(){var h='';for(var j=0;j<30;j++)h+='<div class="item" data-p="'+Q.jst[j]+'"><span><b>Para '+(j+1)+'</b><div class="m">Page '+Q.jst[j]+'</div></span><span class="a">'+Q.jn[j]+'</span></div>';return h}
 function bindItems(){var it=document.querySelectorAll('#body [data-p]');for(var i=0;i<it.length;i++)it[i].onclick=function(){go(this.getAttribute('data-p'));close()}}
 function norm(s){return s.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640\uFB50-\uFDFF\uFE70-\uFEFF\u08D3-\u08FF]/g,'')
   .replace(/[ٱأإآ]/g,'ا').replace(/[یىي]/g,'ي').replace(/[کك]/g,'ك').replace(/[ہھۃة]/g,'ه').replace(/[ؤ]/g,'و').replace(/\s+/g,' ').trim()}
 var idx=null;
-function buildIdx(){idx=[];for(var p=0;p<P.length;p++)for(var i=0;i<P[p].length;i++){var l=P[p][i];if(l[0]==='a')idx.push([p+1,norm(l[2]),l[2]])}}
+function buildIdx(){idx=[];for(var p=0;p<P.length;p++)for(var i=0;i<P[p].length;i++){var l=P[p][i];if(l[0]==='a'){var tx=l[2].map(function(x){return x[2]}).join(' ');idx.push([p+1,norm(tx),tx])}}}
 function doSearch(q){q=norm(q);if(q.length<2)return '<p>Type at least 2 letters (Arabic).</p>';
   if(!idx)buildIdx();var out='',n=0;
   for(var i=0;i<idx.length&&n<60;i++){if(idx[i][1].indexOf(q)>-1){n++;out+='<div class="snip" data-p="'+idx[i][0]+'">'+idx[i][2]+'<div class="m" style="direction:ltr;text-align:left;font-family:system-ui;font-size:12px">Page '+idx[i][0]+'</div></div>'}}
   return out||'<p>Nothing found. Search can miss words that are split across two lines.</p>'}
 $('bIdx').onclick=function(){
   open('Index / Go to page','<div class="row"><input type="number" id="gp" placeholder="Page 1 - '+TOTAL+'" min="1" max="'+TOTAL+'"><button class="btn" id="gb">Go</button></div>'+
-   '<input type="text" id="gs" placeholder="Search surah name (English or Arabic)"><div class="row"><input type="text" id="gq" dir="rtl" placeholder="بحث في القرآن (Arabic text search)"><button class="btn" id="gqb">Find</button></div><div id="gl">'+surahList('')+'</div>');
+   '<input type="text" id="gs" placeholder="Search surah name (English or Arabic)"><div class="row"><input type="text" id="gq" dir="rtl" placeholder="بحث في القرآن (Arabic text search)"><button class="btn" id="gqb">Find</button></div><div class="seg" style="margin:10px 0"><button class="btn on" id="tS">Surahs</button><button class="btn" id="tP">Paras (30)</button></div><div id="gl">'+surahList('')+'</div>');
   bindItems();
   $('gb').onclick=function(){var v=parseInt($('gp').value);if(v>=1&&v<=TOTAL){go(v);close()}};
+  $('tS').onclick=function(){$('tS').classList.add('on');$('tP').classList.remove('on');$('gl').innerHTML=surahList($('gs').value);bindItems()};
+  $('tP').onclick=function(){$('tP').classList.add('on');$('tS').classList.remove('on');$('gl').innerHTML=paraList();bindItems()};
   $('gs').oninput=function(){$('gl').innerHTML=surahList(this.value);bindItems()};
   $('gqb').onclick=function(){$('gl').innerHTML=doSearch($('gq').value);bindItems()};
 };
+
+// ---- ayah tap + translations ----
+var sel=null, TR={}, trKey=ls('q_tr')||'mahmud', amap=null;
+var TRL=[
+ ['mahmud','Urdu - Mahmud ul Hasan (Shaykh al-Hind)','Urdu translation by Mahmud ul Hasan (Shaykh al-Hind), 1909. Public domain. Copy used: fawazahmed0 / dailyayat.com, via the quran-json project. This is the translation only. The Tafseer Usmani notes are not included.'],
+ ['junagarhi','Urdu - Muhammad Junagarhi','Urdu Translation - Muhammad Junagarhi, version 1.1.3. Source: QuranEnc.com. Shown without changes.'],
+ ['pashto-sarfaraz','Pashto - Maulawi Janbaz Sarfaraz','Pashto Translation - Maulawi Janbaz Sarfaraz, version 1.0.0. Source: QuranEnc.com. Shown without changes.'],
+ ['pashto-rwwad','Pashto - Rowwad Translation Center','Pashto Translation - Rowwad Translation Center, version 1.0.1. Source: QuranEnc.com. Shown without changes.'],
+ ['pashto-zakaria','Pashto - Abu Zakaria','Pashto Translation - Abu Zakaria, version 1.0.1. Source: QuranEnc.com. Shown without changes.']];
+function mark(){var o=document.querySelectorAll('.w.sel');for(var i=0;i<o.length;i++)o[i].classList.remove('sel');
+  if(!sel)return;var w=document.querySelectorAll('.w[data-s="'+sel[0]+'"][data-a="'+sel[1]+'"]');for(i=0;i<w.length;i++)w[i].classList.add('sel')}
+function buildAmap(){amap={};for(var p=0;p<P.length;p++)for(var i=0;i<P[p].length;i++){var l=P[p][i];if(l[0]==='a')for(var k=0;k<l[2].length;k++){var key=l[2][k][0]*1000+l[2][k][1];if(!(key in amap))amap[key]=p+1}}}
+function pick(s,a){sel=[s,a];mark();panel()}
+function stepAyah(d){if(!sel)return;var s=sel[0],a=sel[1]+d;
+  if(a>Q.cnt[s-1]){s++;a=1}else if(a<1){s--;if(s<1)return;a=Q.cnt[s-1]}
+  if(s>114||s<1)return;
+  if(!document.querySelector('.w[data-s="'+s+'"][data-a="'+a+'"]')){if(!amap)buildAmap();var p=amap[s*1000+a];if(p){sel=[s,a];go(p);panel();return}}
+  sel=[s,a];mark();panel()}
+function loadTr(k,cb){if(TR[k])return cb(TR[k]);
+  fetch('tr-'+k+'.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){TR[k]=j;cb(j)}).catch(function(){cb(null)})}
+function panel(){if(!sel)return;var s=sel[0],a=sel[1],m=$('modal');
+  $('mTitle').textContent=Q.en[s-1]+'  '+s+':'+a;
+  var opts='';TRL.forEach(function(t){opts+='<option value="'+t[0]+'"'+(t[0]===trKey?' selected':'')+'>'+t[1]+'</option>'});
+  $('body').innerHTML='<div class="navrow"><button class="btn" id="aP">◀ Previous ayah</button><button class="btn" id="aN">Next ayah ▶</button></div><select id="trs">'+opts+'</select><div id="trb"><p>Loading...</p></div>';
+  m.classList.add('ay');m.classList.add('on');
+  $('aP').onclick=function(){stepAyah(-1)};$('aN').onclick=function(){stepAyah(1)};
+  $('trs').onchange=function(){trKey=this.value;ls('q_tr',trKey);panel()};
+  var info=TRL.filter(function(t){return t[0]===trKey})[0], key=trKey;
+  loadTr(key,function(j){if(key!==trKey||!sel||sel[0]!==s||sel[1]!==a)return;var b=$('trb');if(!b)return;
+    if(!j){b.innerHTML='<p>Could not load this translation. Open the app with internet once so it can be saved on the phone.</p>';return}
+    var t=j.t[s-1][a-1], f=j.f?j.f[s-1][a-1]:'';
+    var esc=function(x){return x.replace(/&/g,'&amp;').replace(/</g,'&lt;')};
+    b.innerHTML='<div class="trt">'+esc(t)+'</div>'+(f?'<div class="fn">'+esc(f).replace(/\n/g,'<br>')+'</div>':'')+'<div class="cr">'+info[2]+'</div>'})}
 var BOLDS=[['Light',0],['Medium',0.012],['Bold',0.022],['Extra bold',0.032]];
 $('bSet').onclick=function(){
   var b='';BOLDS.forEach(function(x,k){b+='<button class="btn'+(Math.abs(bold-x[1])<0.002?' on':'')+'" data-b="'+x[1]+'">'+x[0]+'</button>'});
   open('Settings','<label>Text boldness</label><div class="seg" id="sg">'+b+'</div>'+
+   '<label>Reading screen</label><div class="row"><button class="btn" id="hb">Hide top and bottom bars</button></div>'+
    '<label>Ruled lines</label><div class="row"><button class="btn" id="sr">'+(rule?'Turn off':'Turn on')+'</button></div>'+
-   '<p class="note"><b>Phone:</b> swipe right = next page, swipe left = previous page, tap the page to hide or show the bars.<br><b>PC:</b> Left arrow / Page Down / Space / mouse wheel down = next page. Right arrow / Page Up / mouse wheel up = previous page. Home / End = first / last page. B = bookmark, N = night, F = full screen. You can also use the side buttons.</p>'+
-   '<p class="note">Last page read is saved automatically. Quran text and layout: Quranic Universal Library (QUL), Taj Company 13-line Indo-Pak. Font: KFGQPC Nastaleeq (King Fahd Complex). The Quran text is shown exactly as supplied and is not edited.</p>');
+   '<p class="note"><b>Phone:</b> swipe right = next page, swipe left = previous page. <b>Tap any ayah</b> to open its translation (Urdu or Pashto). Tap the surah box or an empty place to hide or show the bars.<br><b>PC:</b> Left arrow / Page Down / Space / mouse wheel down = next page. Right arrow / Page Up / mouse wheel up = previous page. Home / End = first / last page. B = bookmark, N = night, F = full screen. You can also use the side buttons.</p>'+
+   '<p class="note">Last page read is saved automatically. Quran text and layout: Quranic Universal Library (QUL), Taj Company 13-line Indo-Pak. Translations: see the credit under each translation. Font: KFGQPC Nastaleeq (King Fahd Complex). The Quran text is shown exactly as supplied and is not edited.</p>');
   var bs=document.querySelectorAll('#sg [data-b]');for(var i=0;i<bs.length;i++)bs[i].onclick=function(){bold=parseFloat(this.getAttribute('data-b'));ls('q_bold2',bold);applyTheme();fit();
     var o=document.querySelectorAll('#sg [data-b]');for(var k=0;k<o.length;k++)o[k].classList.remove('on');this.classList.add('on')};
+  $('hb').onclick=function(){close();toggleBars()};
   $('sr').onclick=function(){rule=!rule;ls('q_rule',rule?'1':'0');applyTheme();this.textContent=rule?'Turn off':'Turn on'};
 };
 $('bNight').onclick=function(){ls('q_night',ls('q_night')==='1'?'0':'1');applyTheme()};
