@@ -74,6 +74,13 @@ body.hide #showBars{display:block}
 select{width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid #888;background:var(--bg);color:var(--fg)}
 .trt{font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Noto Naskh Arabic','Droid Naskh',system-ui,Arial,sans-serif;font-size:26px;line-height:2.1;direction:rtl;text-align:right;margin:12px 0}
 .fn{font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Noto Naskh Arabic','Droid Naskh',system-ui,Arial,sans-serif;font-size:26px;line-height:2.1;direction:rtl;text-align:right;background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
+.trt sup,.fn sup{font-family:system-ui,Arial,sans-serif;font-size:.5em;font-weight:700;color:#0b5d3b;margin:0 2px}
+body.night .trt sup{color:#7fd1a5}
+.fn .h{display:block;font-family:system-ui,'Noto Naskh Arabic',Arial,sans-serif;font-size:.8em;color:#0b5d3b;margin-bottom:2px}
+body.night .fn .h{color:#7fd1a5}
+.fn .nn{display:inline-block;min-width:1.5em;height:1.5em;line-height:1.5em;text-align:center;border-radius:50%;background:#0b5d3b;color:#fff;font-family:system-ui,Arial,sans-serif;font-size:.55em;vertical-align:middle;margin-left:6px}
+.ip{font-family:QFont,serif;font-size:1.05em}
+.xr{color:#0b5d3b;text-decoration:underline;cursor:pointer}body.night .xr{color:#7fd1a5}
 .cr{font-size:12px;opacity:.75;margin-top:10px;line-height:1.5}
 .navrow{display:flex;gap:8px;margin:2px 0 10px}.navrow .btn{flex:1}
 </style>
@@ -206,13 +213,14 @@ $('bIdx').onclick=function(){
 };
 
 // ---- ayah tap + translations ----
-var sel=null, TR={}, trKey=ls('q_tr')||'mahmud', amap=null;
+var sel=null, TR={}, trKey=ls('q_tr')||'usmani', amap=null;
 var TRL=[
- ['mahmud','Urdu - Mahmud ul Hasan (Shaykh al-Hind)','Urdu translation by Mahmud ul Hasan (Shaykh al-Hind), 1909. Public domain. Copy used: fawazahmed0 / dailyayat.com, via the quran-json project. This is the translation only. The Tafseer Usmani notes are not included.'],
- ['junagarhi','Urdu - Muhammad Junagarhi','Urdu Translation - Muhammad Junagarhi, version 1.1.3. Source: QuranEnc.com. Shown without changes.'],
- ['pashto-sarfaraz','Pashto - Maulawi Janbaz Sarfaraz','Pashto Translation - Maulawi Janbaz Sarfaraz, version 1.0.0. Source: QuranEnc.com. Shown without changes.'],
- ['pashto-rwwad','Pashto - Rowwad Translation Center','Pashto Translation - Rowwad Translation Center, version 1.0.1. Source: QuranEnc.com. Shown without changes.'],
+ ['usmani','Tafseer Usmani (Urdu, with notes)','Tafseer-e-Usmani by Shabbir Ahmad Usmani: Urdu translation with the explanatory notes. Text taken from the file supplied by the app owner (tafsir-e-usmani-with-footnote-tags). The notes are shown without changes.'],
+ ['mahmud','Urdu - Mahmud ul Hasan (Shaykh al-Hind)','Urdu translation by Mahmud ul Hasan (Shaykh al-Hind), 1909. Public domain. Copy used: fawazahmed0 / dailyayat.com, via the quran-json project. Translation only, no notes.'],
+ ['jalandhari','Urdu - Fateh Muhammad Jalandhari','Urdu translation by Fateh Muhammad Jalandhari. Text taken from the file supplied by the app owner (ur-fatah-muhammad-jalandhari-simple).'],
+ ['bayan','Urdu - Bayan-ul-Quran (Dr. Israr Ahmad)','Bayan-ul-Quran by Dr. Israr Ahmad. Text taken from the file supplied by the app owner (bayan-ul-quran-simple).'],
  ['pashto-zakaria','Pashto - Abu Zakaria','Pashto Translation - Abu Zakaria, version 1.0.1. Source: QuranEnc.com. Shown without changes.']];
+if(!TRL.some(function(t){return t[0]===trKey}))trKey='usmani';
 function mark(){var o=document.querySelectorAll('.w.sel');for(var i=0;i<o.length;i++)o[i].classList.remove('sel');
   if(!sel)return;var w=document.querySelectorAll('.w[data-s="'+sel[0]+'"][data-a="'+sel[1]+'"]');for(i=0;i<w.length;i++)w[i].classList.add('sel')}
 function buildAmap(){amap={};for(var p=0;p<P.length;p++)for(var i=0;i<P[p].length;i++){var l=P[p][i];if(l[0]==='a')for(var k=0;k<l[2].length;k++){var key=l[2][k][0]*1000+l[2][k][1];if(!(key in amap))amap[key]=p+1}}}
@@ -222,6 +230,19 @@ function stepAyah(d){if(!sel)return;var s=sel[0],a=sel[1]+d;
   if(s>114||s<1)return;
   if(!document.querySelector('.w[data-s="'+s+'"][data-a="'+a+'"]')){if(!amap)buildAmap();var p=amap[s*1000+a];if(p){sel=[s,a];go(p);panel();return}}
   sel=[s,a];mark();panel()}
+function gotoAyah(s,a){if(!(s>=1&&s<=114&&a>=1&&a<=Q.cnt[s-1]))return;
+  if(!document.querySelector('.w[data-s="'+s+'"][data-a="'+a+'"]')){if(!amap)buildAmap();var p=amap[s*1000+a];if(p)go(p)}
+  sel=[s,a];mark();panel()}
+function fmt(x){var o='',parts=String(x).split(/(<[^>]*>)/);
+  for(var i=0;i<parts.length;i++){var p=parts[i];if(!p)continue;
+    if(p.charAt(0)==='<'){var m;
+      if(/^<sup\b/i.test(p))o+='<sup>';else if(/^<\/sup>/i.test(p))o+='</sup>';
+      else if(/^<strong\b/i.test(p))o+='<strong class="h">';else if(/^<\/strong>/i.test(p))o+='</strong>';
+      else if(/^<span\b/i.test(p))o+='<span class="ip">';else if(/^<\/span>/i.test(p))o+='</span>';
+      else if((m=p.match(/^<a\b[^>]*href="(\d+):(\d+)"/i)))o+='<a class="xr" data-s="'+m[1]+'" data-a="'+m[2]+'">';
+      else if(/^<\/a>/i.test(p))o+='</a>'}
+    else o+=p.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\r?\n/g,'<br>').replace(/\t+/g,' ')}
+  return o}
 function loadTr(k,cb){if(TR[k])return cb(TR[k]);
   fetch('tr-'+k+'.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){TR[k]=j;cb(j)}).catch(function(){cb(null)})}
 function ayahText(s,a){if(!amap)buildAmap();var p=amap[s*1000+a];if(!p)return '';var out=[],q=p-1;
@@ -244,13 +265,17 @@ function panel(){if(!sel)return;var s=sel[0],a=sel[1],m=$('modal');
   $('body').innerHTML='<div class="ctl"><button class="btn" id="aP" title="Previous ayah">◀</button><select id="trs">'+opts+'</select><button class="btn" id="aN" title="Next ayah">▶</button></div><div id="pc"><div class="ayar">'+at+'</div><div id="trb"><p>Loading...</p></div></div>';
   setAH();m.classList.add('ay');m.classList.add('on');
   $('aP').onclick=function(){stepAyah(-1)};$('aN').onclick=function(){stepAyah(1)};
+  $('pc').onclick=function(e){var x=e.target.closest&&e.target.closest('.xr');if(x)gotoAyah(parseInt(x.getAttribute('data-s')),parseInt(x.getAttribute('data-a')))};
   $('trs').onchange=function(){trKey=this.value;ls('q_tr',trKey);panel()};
   var info=TRL.filter(function(t){return t[0]===trKey})[0], key=trKey;
   loadTr(key,function(j){if(key!==trKey||!sel||sel[0]!==s||sel[1]!==a)return;var b=$('trb');if(!b)return;
     if(!j){b.innerHTML='<p>Could not load this translation. Open the app with internet once so it can be saved on the phone.</p>';return}
     var t=j.t[s-1][a-1], f=j.f?j.f[s-1][a-1]:'';
     var esc=function(x){return x.replace(/&/g,'&amp;').replace(/</g,'&lt;')};
-    b.innerHTML='<div class="trt">'+esc(t)+'</div>'+(f?'<div class="fn">'+esc(f).replace(/\n/g,'<br>')+'</div>':'')})}
+    if(j.u){var h='<div class="trt">'+fmt(t)+'</div>',ids=(t.match(/foot_note="(\d+)"/g)||[]).map(function(x){return x.replace(/\D/g,'')}),n=0;
+      ids.forEach(function(id){if(f&&f[id]){n++;h+='<div class="fn"><span class="nn">'+n+'</span> '+fmt(f[id])+'</div>'}});
+      b.innerHTML=h}
+    else b.innerHTML='<div class="trt">'+esc(t)+'</div>'+(f&&typeof f==='string'?'<div class="fn">'+esc(f)+'</div>':'')})}
 var BOLDS=[['Light',0],['Medium',0.012],['Bold',0.022],['Extra bold',0.032]];
 $('bSet').onclick=function(){
   var b='';BOLDS.forEach(function(x,k){b+='<button class="btn'+(Math.abs(bold-x[1])<0.002?' on':'')+'" data-b="'+x[1]+'">'+x[0]+'</button>'});
