@@ -59,7 +59,16 @@ label{display:block;margin:14px 0 4px;font-weight:600}
 .note{font-size:13px;opacity:.75;margin-top:14px}
 .w.sel{background:rgba(212,160,23,.40);border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 #modal.ay{background:transparent;pointer-events:none}
-#modal.ay #sheet{pointer-events:auto;max-height:48%;box-shadow:0 -4px 18px rgba(0,0,0,.35)}
+#modal.ay #sheet{pointer-events:auto;max-height:88%;height:var(--ah,46vh);box-shadow:0 -4px 18px rgba(0,0,0,.35)}
+#body{min-height:0}
+#modal.ay #body{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+#modal.ay #pc{flex:1;min-height:0;overflow:auto;padding-bottom:20px}
+#grip{display:none;width:46px;height:5px;border-radius:3px;background:#888;margin:8px auto 0}
+#modal.ay #grip{display:block}
+#modal.ay #mh{touch-action:none;cursor:ns-resize;padding-top:6px}
+#mSize{display:none}#modal.ay #mSize{display:inline-block}
+.ctl{display:flex;gap:6px;margin:0 0 6px;align-items:center}.ctl .btn{padding:9px 14px;font-size:16px}.ctl select{flex:1;min-width:0}
+.ayar{font-family:QFont,serif;font-size:26px;line-height:2;direction:rtl;text-align:center;-webkit-text-stroke:calc(var(--bold) * 1em) currentColor;border-bottom:1px solid #8886;padding-bottom:6px;margin-bottom:4px}
 #showBars{display:none;position:fixed;top:calc(8px + env(safe-area-inset-top));right:8px;z-index:6;width:40px;height:40px;border:0;border-radius:20px;background:rgba(11,93,59,.85);color:#fff;font-size:20px}
 body.hide #showBars{display:block}
 select{width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid #888;background:var(--bg);color:var(--fg)}
@@ -83,7 +92,7 @@ select{width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid
   </div>
 </div>
 <button id="showBars" title="Show bars">☰</button><button class="navb" id="nN" title="Next page (Left arrow)">◀</button><button class="navb" id="nP" title="Previous page (Right arrow)">▶</button>
-<div id="modal"><div id="sheet"><h2><span id="mTitle"></span><button id="mClose">✕</button></h2><div id="body"></div></div></div>
+<div id="modal"><div id="sheet"><div id="grip"></div><h2 id="mh"><span id="mTitle"></span><span><button id="mSize" title="Panel size: small / medium / large">⇕</button><button id="mClose">✕</button></span></h2><div id="body"></div></div></div>
 <script src="quran-data.js"></script>
 <script>
 (function(){
@@ -215,11 +224,25 @@ function stepAyah(d){if(!sel)return;var s=sel[0],a=sel[1]+d;
   sel=[s,a];mark();panel()}
 function loadTr(k,cb){if(TR[k])return cb(TR[k]);
   fetch('tr-'+k+'.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){TR[k]=j;cb(j)}).catch(function(){cb(null)})}
+function ayahText(s,a){if(!amap)buildAmap();var p=amap[s*1000+a];if(!p)return '';var out=[],q=p-1;
+  while(q<P.length){var f=false;for(var i=0;i<P[q].length;i++){var l=P[q][i];if(l[0]==='a')for(var k=0;k<l[2].length;k++){var x=l[2][k];if(x[0]===s&&x[1]===a){out.push(x[2]);f=true}}}
+    if(!f)break;q++}
+  return out.join(' ')}
+var AH=parseFloat(ls('q_ah'));if(!(AH>=0.2&&AH<=0.85))AH=0.46;
+function setAH(){$('sheet').style.setProperty('--ah',Math.round(window.innerHeight*AH)+'px')}
+(function(){var h=$('mh'),g=$('grip'),sy=0,sh=0,on=false;
+  function dn(e){if(!$('modal').classList.contains('ay'))return;if(e.target.closest&&e.target.closest('button'))return;on=true;sy=e.clientY;sh=$('sheet').offsetHeight;try{e.currentTarget.setPointerCapture(e.pointerId)}catch(x){}}
+  function mv(e){if(!on)return;var H=Math.max(120,Math.min(window.innerHeight*0.85,sh+(sy-e.clientY)));AH=H/window.innerHeight;setAH()}
+  function up(){if(on){on=false;ls('q_ah',AH.toFixed(3))}}
+  [h,g].forEach(function(el){el.addEventListener('pointerdown',dn);el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up)});
+  $('mSize').onclick=function(){var z=[0.28,0.46,0.75],n=0;for(var i=0;i<z.length;i++)if(Math.abs(z[i]-AH)<0.05)n=(i+1)%z.length;if(AH>0.7)n=0;AH=z[n];ls('q_ah',AH);setAH()};
+  window.addEventListener('resize',setAH)})();
 function panel(){if(!sel)return;var s=sel[0],a=sel[1],m=$('modal');
   $('mTitle').textContent=Q.en[s-1]+'  '+s+':'+a;
   var opts='';TRL.forEach(function(t){opts+='<option value="'+t[0]+'"'+(t[0]===trKey?' selected':'')+'>'+t[1]+'</option>'});
-  $('body').innerHTML='<div class="navrow"><button class="btn" id="aP">◀ Previous ayah</button><button class="btn" id="aN">Next ayah ▶</button></div><select id="trs">'+opts+'</select><div id="trb"><p>Loading...</p></div>';
-  m.classList.add('ay');m.classList.add('on');
+  var at=ayahText(s,a).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  $('body').innerHTML='<div class="ctl"><button class="btn" id="aP" title="Previous ayah">◀</button><select id="trs">'+opts+'</select><button class="btn" id="aN" title="Next ayah">▶</button></div><div id="pc"><div class="ayar">'+at+'</div><div id="trb"><p>Loading...</p></div></div>';
+  setAH();m.classList.add('ay');m.classList.add('on');
   $('aP').onclick=function(){stepAyah(-1)};$('aN').onclick=function(){stepAyah(1)};
   $('trs').onchange=function(){trKey=this.value;ls('q_tr',trKey);panel()};
   var info=TRL.filter(function(t){return t[0]===trKey})[0], key=trKey;
@@ -234,7 +257,7 @@ $('bSet').onclick=function(){
   open('Settings','<label>Text boldness</label><div class="seg" id="sg">'+b+'</div>'+
    '<label>Reading screen</label><div class="row"><button class="btn" id="hb">Hide top and bottom bars</button></div>'+
    '<label>Ruled lines</label><div class="row"><button class="btn" id="sr">'+(rule?'Turn off':'Turn on')+'</button></div>'+
-   '<p class="note"><b>Phone:</b> swipe right = next page, swipe left = previous page. <b>Tap any ayah</b> to open its translation (Urdu or Pashto). Tap the surah box or an empty place to hide or show the bars.<br><b>PC:</b> Left arrow / Page Down / Space / mouse wheel down = next page. Right arrow / Page Up / mouse wheel up = previous page. Home / End = first / last page. B = bookmark, N = night, F = full screen. You can also use the side buttons.</p>'+
+   '<p class="note"><b>Phone:</b> swipe right = next page, swipe left = previous page. <b>Tap any ayah</b> to open its translation (Urdu or Pashto). Drag the translation panel up or down to change its size, or tap the ⇕ button. Tap the surah box or an empty place to hide or show the bars.<br><b>PC:</b> Left arrow / Page Down / Space / mouse wheel down = next page. Right arrow / Page Up / mouse wheel up = previous page. Home / End = first / last page. B = bookmark, N = night, F = full screen. You can also use the side buttons.</p>'+
    '<p class="note">Last page read is saved automatically. Quran text and layout: Quranic Universal Library (QUL), Taj Company 13-line Indo-Pak. Translations: see the credit under each translation. Font: KFGQPC Nastaleeq (King Fahd Complex). The Quran text is shown exactly as supplied and is not edited.</p>');
   var bs=document.querySelectorAll('#sg [data-b]');for(var i=0;i<bs.length;i++)bs[i].onclick=function(){bold=parseFloat(this.getAttribute('data-b'));ls('q_bold2',bold);applyTheme();fit();
     var o=document.querySelectorAll('#sg [data-b]');for(var k=0;k<o.length;k++)o[k].classList.remove('on');this.classList.add('on')};
