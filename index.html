@@ -72,8 +72,8 @@ label{display:block;margin:14px 0 4px;font-weight:600}
 #showBars{display:none;position:fixed;top:calc(8px + env(safe-area-inset-top));right:8px;z-index:6;width:40px;height:40px;border:0;border-radius:20px;background:rgba(11,93,59,.85);color:#fff;font-size:20px}
 body.hide #showBars{display:block}
 select{width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid #888;background:var(--bg);color:var(--fg)}
-.trt{font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Noto Naskh Arabic','Droid Naskh',system-ui,Arial,sans-serif;font-size:21px;line-height:2.1;direction:rtl;text-align:right;margin:12px 0}
-.fn{font-family:system-ui,'Noto Naskh Arabic',Arial,sans-serif;font-size:15px;line-height:1.8;direction:rtl;text-align:right;background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
+.trt{font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Noto Naskh Arabic','Droid Naskh',system-ui,Arial,sans-serif;font-size:26px;line-height:2.1;direction:rtl;text-align:right;margin:12px 0}
+.fn{font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Noto Naskh Arabic','Droid Naskh',system-ui,Arial,sans-serif;font-size:26px;line-height:2.1;direction:rtl;text-align:right;background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
 .cr{font-size:12px;opacity:.75;margin-top:10px;line-height:1.5}
 .navrow{display:flex;gap:8px;margin:2px 0 10px}.navrow .btn{flex:1}
 </style>
@@ -250,7 +250,7 @@ function panel(){if(!sel)return;var s=sel[0],a=sel[1],m=$('modal');
     if(!j){b.innerHTML='<p>Could not load this translation. Open the app with internet once so it can be saved on the phone.</p>';return}
     var t=j.t[s-1][a-1], f=j.f?j.f[s-1][a-1]:'';
     var esc=function(x){return x.replace(/&/g,'&amp;').replace(/</g,'&lt;')};
-    b.innerHTML='<div class="trt">'+esc(t)+'</div>'+(f?'<div class="fn">'+esc(f).replace(/\n/g,'<br>')+'</div>':'')+'<div class="cr">'+info[2]+'</div>'})}
+    b.innerHTML='<div class="trt">'+esc(t)+'</div>'+(f?'<div class="fn">'+esc(f).replace(/\n/g,'<br>')+'</div>':'')})}
 var BOLDS=[['Light',0],['Medium',0.012],['Bold',0.022],['Extra bold',0.032]];
 $('bSet').onclick=function(){
   var b='';BOLDS.forEach(function(x,k){b+='<button class="btn'+(Math.abs(bold-x[1])<0.002?' on':'')+'" data-b="'+x[1]+'">'+x[0]+'</button>'});
@@ -258,7 +258,7 @@ $('bSet').onclick=function(){
    '<label>Reading screen</label><div class="row"><button class="btn" id="hb">Hide top and bottom bars</button></div>'+
    '<label>Ruled lines</label><div class="row"><button class="btn" id="sr">'+(rule?'Turn off':'Turn on')+'</button></div>'+
    '<p class="note"><b>Phone:</b> swipe right = next page, swipe left = previous page. <b>Tap any ayah</b> to open its translation (Urdu or Pashto). Drag the translation panel up or down to change its size, or tap the ⇕ button. Tap the surah box or an empty place to hide or show the bars.<br><b>PC:</b> Left arrow / Page Down / Space / mouse wheel down = next page. Right arrow / Page Up / mouse wheel up = previous page. Home / End = first / last page. B = bookmark, N = night, F = full screen. You can also use the side buttons.</p>'+
-   '<p class="note">Last page read is saved automatically. Quran text and layout: Quranic Universal Library (QUL), Taj Company 13-line Indo-Pak. Translations: see the credit under each translation. Font: KFGQPC Nastaleeq (King Fahd Complex). The Quran text is shown exactly as supplied and is not edited.</p>');
+   '<p class="note">Last page read is saved automatically.</p><label>Sources and credits</label><div class="cr">'+TRL.map(function(t){return '<b>'+t[1]+'</b><br>'+t[2]}).join('<br><br>')+'</div><p class="note"> Quran text and layout: Quranic Universal Library (QUL), Taj Company 13-line Indo-Pak. Translations: see Sources and credits below. Font: KFGQPC Nastaleeq (King Fahd Complex). The Quran text is shown exactly as supplied and is not edited.</p>');
   var bs=document.querySelectorAll('#sg [data-b]');for(var i=0;i<bs.length;i++)bs[i].onclick=function(){bold=parseFloat(this.getAttribute('data-b'));ls('q_bold2',bold);applyTheme();fit();
     var o=document.querySelectorAll('#sg [data-b]');for(var k=0;k<o.length;k++)o[k].classList.remove('on');this.classList.add('on')};
   $('hb').onclick=function(){close();toggleBars()};
